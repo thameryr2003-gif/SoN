@@ -14,20 +14,6 @@ const client = new Client({
   ],
 });
 
-// إجبار ديسكورد على استخدام بروتوكول الويب العادي لتمرير الصوت وتفادي قيد الـ UDP
-const { GatewayVersion } = require('discord.js');
-client.on('shardReady', (shardId) => {
-  const ws = client.ws.shards.get(shardId);
-  if (ws) {
-    ws.on('VOICE_SERVER_UPDATE', (data) => {
-      client.emit('raw', { t: 'VOICE_SERVER_UPDATE', d: data });
-    });
-    ws.on('VOICE_STATE_UPDATE', (data) => {
-      client.emit('raw', { t: 'VOICE_STATE_UPDATE', d: data });
-    });
-  }
-});
-
 const distube = new DisTube(client, {
   plugins: [new YouTubePlugin()],
   emitNewSongOnly: true,
@@ -35,15 +21,13 @@ const distube = new DisTube(client, {
 });
 
 const PORT = process.env.PORT || 3000;
-http
-  .createServer((_, res) => {
-    res.writeHead(200);
-    res.end('OK');
-  })
-  .listen(PORT, '0.0.0.0', () => console.log('HTTP:', PORT));
+http.createServer((_, res) => {
+  res.writeHead(200);
+  res.end('OK');
+}).listen(PORT, '0.0.0.0', () => console.log('HTTP:', PORT));
 
 client.once('ready', () => {
-  console.log('✅ البوت شغال ومتصل الآن بـ ديسكورد:', client.user.tag);
+  console.log('✅ البوت شغال ومتصل بـ ديسكورد:', client.user.tag);
 });
 
 distube.on('playSong', (queue, song) => {
@@ -51,7 +35,7 @@ distube.on('playSong', (queue, song) => {
 });
 
 distube.on('error', (channel, err) => {
-  console.error('[DisTube]', err);
+  console.error('[DisTube Error]', err.message);
   channel?.send(`❌ خطأ في التشغيل: ${err.message}`).catch(() => {});
 });
 
@@ -62,17 +46,15 @@ client.on('messageCreate', async (message) => {
   const voice = message.member?.voice?.channel;
 
   if (!voice) return message.reply('❌ ادخل قناة صوتية أولاً!');
-  if (!query) return message.reply('❌ مثال:\n`ت عراقي`');
+  if (!query) return message.reply('❌ اكتب اسم الأغنية بعد حرف ت');
 
   try {
-    console.log('🔍 تشغيل:', query);
-    
+    console.log('🔍 طلب تشغيل:', query);
     await distube.play(voice, query, {
       member: message.member,
       textChannel: message.channel,
       message,
     });
-
   } catch (e) {
     console.error(e);
     message.reply(`❌ حدث خطأ: ${e.message}`);
@@ -83,5 +65,4 @@ if (!process.env.DISCORD_TOKEN) {
   console.error('DISCORD_TOKEN مفقود');
   process.exit(1);
 }
-
 client.login(process.env.DISCORD_TOKEN);
