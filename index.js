@@ -1,3 +1,4 @@
+process.env.DISCORDJS_DEFAULT_GATEWAY_INTENTS = "1536";
 require('@snazzah/davey');
 const { Client, GatewayIntentBits } = require('discord.js');
 const { DisTube } = require('distube');
