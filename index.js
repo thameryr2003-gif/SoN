@@ -2,7 +2,6 @@ require('@snazzah/davey');
 const { Client, GatewayIntentBits } = require('discord.js');
 const { DisTube } = require('distube');
 const { YouTubePlugin } = require('@distube/youtube');
-const { getMaxProtocolVersion } = require('@discordjs/voice');
 const http = require('http');
 
 const client = new Client({
@@ -28,8 +27,7 @@ http
   .listen(PORT, '0.0.0.0', () => console.log('HTTP:', PORT));
 
 client.once('ready', () => {
-  console.log('✅ متصل:', client.user.tag);
-  console.log('DAVE:', getMaxProtocolVersion());
+  console.log('✅ البوت شغال ومتصل الآن بـ ديسكورد:', client.user.tag);
 });
 
 distube.on('playSong', (queue, song) => {
@@ -47,24 +45,23 @@ client.on('messageCreate', async (message) => {
   const query = message.content.slice(2).trim();
   const voice = message.member?.voice?.channel;
 
-  if (!voice) return message.reply('❌ ادخل قناة صوتية!');
-  if (!query) return message.reply('❌ مثال:\n`ت عراقي`\n`ت https://youtube.com/watch?v=...`');
+  if (!voice) return message.reply('❌ ادخل قناة صوتية أولاً!');
+  if (!query) return message.reply('❌ مثال:\n`ت عراقي`\n`ت https://youtube.com...`');
 
   const cmd = query.split(/\s+/)[0].toLowerCase();
-  const rest = query.slice(cmd.length).trim();
 
   try {
     if (cmd === 'س' || cmd === 'skip') {
       const q = distube.getQueue(message);
-      if (!q) return message.reply('❌ ما في تشغيل.');
+      if (!q) return message.reply('❌ ما في تشغيل حالياً.');
       q.skip();
       return message.reply('⏭️ تم التخطي.');
     }
     if (cmd === 'وقف' || cmd === 'stop') {
       const q = distube.getQueue(message);
-      if (!q) return message.reply('❌ ما في تشغيل.');
+      if (!q) return message.reply('❌ ما في تشغيل حالياً.');
       q.stop();
-      return message.reply('⏹️ تم الإيقاف.');
+      return message.reply('⏹️ تم الإيقاف وخروج البوت.');
     }
 
     console.log('🔍 تشغيل:', query);
