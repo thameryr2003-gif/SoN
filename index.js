@@ -1,5 +1,4 @@
 require('@snazzah/davey');
-
 const { Client, GatewayIntentBits } = require('discord.js');
 const { DisTube } = require('distube');
 const { YouTubePlugin } = require('@distube/youtube');
@@ -18,7 +17,6 @@ const client = new Client({
 const distube = new DisTube(client, {
   plugins: [new YouTubePlugin()],
   emitNewSongOnly: true,
-  leaveOnFinish: true,
 });
 
 const PORT = process.env.PORT || 3000;
@@ -62,7 +60,6 @@ client.on('messageCreate', async (message) => {
       q.skip();
       return message.reply('⏭️ تم التخطي.');
     }
-
     if (cmd === 'وقف' || cmd === 'stop') {
       const q = distube.getQueue(message);
       if (!q) return message.reply('❌ ما في تشغيل.');
