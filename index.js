@@ -5,9 +5,6 @@ const { DisTube } = require('distube');
 const { YouTubePlugin } = require('@distube/youtube');
 const http = require('http');
 
-// إجبار البوت على استخدام مشغل صوتي متوافق مع سيرفرات الرفع المجانية
-const { joinVoiceChannel, createAudioPlayer, NoSubscriberBehavior } = require('@discordjs/voice');
-
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -17,14 +14,24 @@ const client = new Client({
   ],
 });
 
+// إجبار ديسكورد على استخدام بروتوكول الويب العادي لتمرير الصوت وتفادي قيد الـ UDP
+const { GatewayVersion } = require('discord.js');
+client.on('shardReady', (shardId) => {
+  const ws = client.ws.shards.get(shardId);
+  if (ws) {
+    ws.on('VOICE_SERVER_UPDATE', (data) => {
+      client.emit('raw', { t: 'VOICE_SERVER_UPDATE', d: data });
+    });
+    ws.on('VOICE_STATE_UPDATE', (data) => {
+      client.emit('raw', { t: 'VOICE_STATE_UPDATE', d: data });
+    });
+  }
+});
+
 const distube = new DisTube(client, {
   plugins: [new YouTubePlugin()],
   emitNewSongOnly: true,
   nsfw: true,
-  // تخصيص إعدادات الاتصال الصوتي لتفادي مشكلة الـ 30 ثانية
-  customFilters: {
-    "clear": "clearntext"
-  }
 });
 
 const PORT = process.env.PORT || 3000;
@@ -55,28 +62,11 @@ client.on('messageCreate', async (message) => {
   const voice = message.member?.voice?.channel;
 
   if (!voice) return message.reply('❌ ادخل قناة صوتية أولاً!');
-  if (!query) return message.reply('❌ مثال:\n`ت عراقي`\n`ت https://youtube.com...`');
-
-  const args = query.split(/\s+/);
-  const cmd = args[0].toLowerCase();
+  if (!query) return message.reply('❌ مثال:\n`ت عراقي`');
 
   try {
-    if (cmd === 'س' || cmd === 'skip') {
-      const q = distube.getQueue(message);
-      if (!q) return message.reply('❌ ما في تشغيل حالياً.');
-      q.skip();
-      return message.reply('⏭️ تم التخطي.');
-    }
-    if (cmd === 'وقف' || cmd === 'stop') {
-      const q = distube.getQueue(message);
-      if (!q) return message.reply('❌ ما في تشغيل حالياً.');
-      q.stop();
-      return message.reply('⏹️ تم الإيقاف وخروج البوت.');
-    }
-
     console.log('🔍 تشغيل:', query);
     
-    // بدء تشغيل الصوت وضمان ثبات الاتصال داخل الروم
     await distube.play(voice, query, {
       member: message.member,
       textChannel: message.channel,
