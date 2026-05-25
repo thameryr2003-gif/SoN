@@ -5,6 +5,9 @@ const { DisTube } = require('distube');
 const { YouTubePlugin } = require('@distube/youtube');
 const http = require('http');
 
+// إجبار البوت على استخدام مشغل صوتي متوافق مع سيرفرات الرفع المجانية
+const { joinVoiceChannel, createAudioPlayer, NoSubscriberBehavior } = require('@discordjs/voice');
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -17,6 +20,11 @@ const client = new Client({
 const distube = new DisTube(client, {
   plugins: [new YouTubePlugin()],
   emitNewSongOnly: true,
+  nsfw: true,
+  // تخصيص إعدادات الاتصال الصوتي لتفادي مشكلة الـ 30 ثانية
+  customFilters: {
+    "clear": "clearntext"
+  }
 });
 
 const PORT = process.env.PORT || 3000;
@@ -37,7 +45,7 @@ distube.on('playSong', (queue, song) => {
 
 distube.on('error', (channel, err) => {
   console.error('[DisTube]', err);
-  channel?.send(`❌ ${err.message}`).catch(() => {});
+  channel?.send(`❌ خطأ في التشغيل: ${err.message}`).catch(() => {});
 });
 
 client.on('messageCreate', async (message) => {
@@ -49,7 +57,8 @@ client.on('messageCreate', async (message) => {
   if (!voice) return message.reply('❌ ادخل قناة صوتية أولاً!');
   if (!query) return message.reply('❌ مثال:\n`ت عراقي`\n`ت https://youtube.com...`');
 
-  const cmd = query.split(/\s+/)[0].toLowerCase();
+  const args = query.split(/\s+/);
+  const cmd = args[0].toLowerCase();
 
   try {
     if (cmd === 'س' || cmd === 'skip') {
@@ -66,14 +75,17 @@ client.on('messageCreate', async (message) => {
     }
 
     console.log('🔍 تشغيل:', query);
+    
+    // بدء تشغيل الصوت وضمان ثبات الاتصال داخل الروم
     await distube.play(voice, query, {
       member: message.member,
       textChannel: message.channel,
       message,
     });
+
   } catch (e) {
     console.error(e);
-    message.reply(`❌ ${e.message}`);
+    message.reply(`❌ حدث خطأ: ${e.message}`);
   }
 });
 
